@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Reality</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>📅 Task Reality</h1>
+  <p class="subtitle">　提出まであと何日！？</p>
+  <p　class="subtitle">☟課題を打ち込んで現状把握☟</p>
+
+  <!-- 課題追加 -->
+  <div class="card">
+    <label>課題名</label>
+    <input type="text" id="taskName">
+
+    <label>締切日</label>
+    <input type="date" id="deadline">
+
+    <label>総作業時間（時間）</label>
+    <input type="number" id="totalHours" min="1">
+
+    <button id="addBtn">課題を追加</button>
+  </div>
+
+  <!-- 計算結果表示 -->
+  <div class="result" id="result"></div>
+
+  <!-- 課題削除 -->
+  <div class="card">
+    <label>削除する課題</label>
+    <select id="taskSelect"></select>
+    <button id="deleteBtn">選択した課題を削除</button>
+  </div>
+
+  <h2 id="monthTitle"></h2>
+  <div class="calendar" id="calendar"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
