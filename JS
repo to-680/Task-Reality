@@ -1,0 +1,160 @@
+const taskNameInput = document.getElementById("taskName");
+const deadlineInput = document.getElementById("deadline");
+const totalHoursInput = document.getElementById("totalHours");
+const addBtn = document.getElementById("addBtn");
+const result = document.getElementById("result");
+
+const taskSelect = document.getElementById("taskSelect");
+const deleteBtn = document.getElementById("deleteBtn");
+
+const calendar = document.getElementById("calendar");
+const monthTitle = document.getElementById("monthTitle");
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+// 🎨 色パレット
+const colors = [
+  "#6366f1", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#8b5cf6"
+];
+
+// 課題名から色を決定
+function getColor(taskName) {
+  let hash = 0;
+  for (let i = 0; i < taskName.length; i++) {
+    hash += taskName.charCodeAt(i);
+  }
+  return colors[hash % colors.length];
+}
+
+addBtn.addEventListener("click", addTask);
+deleteBtn.addEventListener("click", deleteTask);
+
+function addTask() {
+  const taskName = taskNameInput.value;
+  const deadline = new Date(deadlineInput.value);
+  const totalHours = Number(totalHoursInput.value);
+
+  if (!taskName || !deadlineInput.value || totalHours <= 0) {
+    alert("すべて正しく入力してください");
+    return;
+  }
+
+  deadline.setHours(0, 0, 0, 0);
+
+  const remainingDays =
+    Math.ceil((deadline - today) / (1000 * 60 * 60 * 24)) + 1;
+
+  if (remainingDays <= 0) {
+    alert("締切日は今日以降にしてください");
+    return;
+  }
+
+  const hoursPerDay = totalHours / remainingDays;
+
+  // ✅ 計算結果表示（復活）
+  result.innerHTML = `
+    📌 課題名：${taskName}<br>
+    ⏰ 残り日数：${remainingDays}日<br>
+    💻 1日あたり必要作業時間：${hoursPerDay.toFixed(2)}時間<br><br>
+    ${hoursPerDay > 3 ? "🔥 かなりハードです" : "🙂 現実的なペースです"}
+  `;
+
+  // 🎨 色決定（締切が近いと赤）
+  const baseColor = getColor(taskName);
+  const color = remainingDays <= 3 ? "red" : baseColor;
+
+  // 日ごとに課題を保存
+  for (let i = 0; i < remainingDays; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+
+    tasks.push({
+      date: date.toISOString().slice(0, 10),
+      hours: hoursPerDay,
+      name: taskName,
+      color: color
+    });
+  }
+
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  renderCalendar();
+}
+
+// 🗑️ 課題削除
+function deleteTask() {
+  const selectedTask = taskSelect.value;
+  if (!selectedTask) return;
+
+  const confirmDelete = confirm(`「${selectedTask}」を削除しますか？`);
+  if (!confirmDelete) return;
+
+  tasks = tasks.filter(t => t.name !== selectedTask);
+
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  result.innerHTML = "🗑️ 課題を削除しました";
+
+  renderCalendar();
+}
+
+// 課題一覧をセレクトボックスに反映
+function updateTaskSelect() {
+  taskSelect.innerHTML = "";
+
+  const taskNames = [...new Set(tasks.map(t => t.name))];
+
+  taskNames.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    taskSelect.appendChild(option);
+  });
+}
+
+function renderCalendar() {
+  calendar.innerHTML = "";
+
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  monthTitle.textContent = `${year}年 ${month + 1}月`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    calendar.appendChild(document.createElement("div"));
+  }
+
+  for (let day = 1; day <= lastDate; day++) {
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    const dateStr = new Date(year, month, day)
+      .toISOString()
+      .slice(0, 10);
+
+    const dayTasks = tasks.filter(t => t.date === dateStr);
+    const totalTime = dayTasks.reduce((sum, t) => sum + t.hours, 0);
+
+    const taskNamesHtml = dayTasks
+      .map(t => `<div class="task-name" style="background:${t.color};">
+                   ${t.name}
+                 </div>`)
+      .join("");
+
+    cell.innerHTML = `
+      <div class="day-number">${day}</div>
+      ${totalTime > 0 ? `<div class="time">合計 ${totalTime.toFixed(1)}h</div>` : ""}
+      ${taskNamesHtml}
+    `;
+
+    calendar.appendChild(cell);
+  }
+
+  updateTaskSelect();
+}
+
+renderCalendar();
